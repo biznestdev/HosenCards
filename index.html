@@ -1,1 +1,225 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>קלפי חוסן</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            /* הוסר רקע המנטה הקבוע - יוחלף באנימציית Tailwind למטה */
+        }
+        
+        /* אנימציית קפיצה רכה וקפיצית (Bounce) */
+        @keyframes soft-pop {
+            0% { transform: scale(0.85) translateY(15px); opacity: 0; }
+            60% { transform: scale(1.05) translateY(-5px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        
+        .animate-soft-pop {
+            animation: soft-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
 
+        /* אנימציה לרקע מתחלף */
+        @keyframes gradient-bg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .animate-gradient-bg {
+            background-size: 200% 200%;
+            animation: gradient-bg 10s ease infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200 animate-gradient-bg">
+
+    <!-- כאן React יטען את האפליקציה -->
+    <div id="root" class="w-full max-w-md"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function App() {
+            const TOTAL_CARDS = 40;
+            
+            // פונקציה לייצור חפיסה חדשה (מערך מ-1 עד 40)
+            const getInitialDeck = () => Array.from({ length: TOTAL_CARDS }, (_, i) => i + 1);
+
+            const [deck, setDeck] = useState(getInitialDeck());
+            const [currentCard, setCurrentCard] = useState(null);
+            const [isAnimating, setIsAnimating] = useState(false);
+            const [imageError, setImageError] = useState(false); // ניהול מצב שגיאת טעינת תמונה
+            const [currentScreen, setCurrentScreen] = useState('welcome'); // ניהול מסך: 'welcome' או 'game'
+            const [showResetModal, setShowResetModal] = useState(false); // ניהול תצוגת חלון האישור
+
+            // פונקציה להגרלת קלף
+            const drawCard = () => {
+                if (deck.length === 0) return;
+                
+                // בחירת אינדקס אקראי מתוך הקלפים שנותרו
+                const randomIndex = Math.floor(Math.random() * deck.length);
+                const drawnCard = deck[randomIndex];
+                
+                // עדכון הקלף הנוכחי ואיפוס שגיאת התמונה
+                setCurrentCard(drawnCard);
+                setImageError(false);
+                
+                // הסרת הקלף שנבחר מהחפיסה
+                setDeck(deck.filter(card => card !== drawnCard));
+
+                // הפעלת אנימציה מחדש
+                setIsAnimating(false);
+                setTimeout(() => setIsAnimating(true), 10);
+            };
+
+            // פונקציה לאיפוס
+            const resetDeck = () => {
+                setDeck(getInitialDeck());
+                setCurrentCard(null);
+                setImageError(false);
+            };
+
+            // קביעת נתיב התמונה (יחסי בלבד, באותה התיקייה)
+            const getImagePath = () => {
+                if (currentCard === null) return 'card0.png';
+                return `card${currentCard}.png`;
+            };
+
+            // ---------------- מסך פתיחה ----------------
+            if (currentScreen === 'welcome') {
+                return (
+                    <div className="bg-white/80 backdrop-blur-md rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 text-center border border-white max-w-lg w-full mx-4 relative">
+                        <h1 className="text-4xl font-bold text-purple-800 mb-6 tracking-tight">קלפי חוסן</h1>
+                        
+                        <div className="bg-purple-50/70 rounded-3xl p-6 mb-8 text-right border border-purple-100 shadow-inner">
+                            <h2 className="text-xl font-bold text-purple-800 mb-4">הנחיות למורה ולתלמידים:</h2>
+                            <ul className="space-y-4 text-purple-900/80 font-medium leading-relaxed">
+                                <li className="flex items-start gap-3">
+                                    <span className="text-pink-400 mt-0.5 text-lg">●</span>
+                                    <span>המשחק מכיל 40 קלפי חוסן שונים להתמודדות ואייח.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-pink-400 mt-0.5 text-lg">●</span>
+                                    <span>בכל תור נציג ילחץ על "הגרל קלף" כדי לשלוף קלף אקראי.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-pink-400 mt-0.5 text-lg">●</span>
+                                    <span>קראו את הקלף, שתפו מחשבות ודונו יחד בכיתה.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-pink-400 mt-0.5 text-lg">●</span>
+                                    <span>הקלפים לא חוזרים על עצמם במהלך המשחק.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-pink-400 mt-0.5 text-lg">●</span>
+                                    <span>ליצירת אווירה בטוחה, הקשיבו זה לזה בכבוד ובסבלנות.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentScreen('game')}
+                            className="w-full py-4 px-10 rounded-2xl text-2xl font-bold bg-pink-300 hover:bg-pink-400 text-white shadow-[0_4px_14px_0_rgba(244,114,182,0.39)] hover:shadow-[0_6px_20px_rgba(244,114,182,0.23)] hover:-translate-y-1 transition-all active:scale-95"
+                        >
+                            התחל לשחק
+                        </button>
+                    </div>
+                );
+            }
+
+            // ---------------- מסך המשחק (ראשי) ----------------
+            return (
+                <>
+                    <div className="bg-white/80 backdrop-blur-md rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8 text-center border border-white relative">
+                        <h1 className="text-3xl font-bold text-purple-800 mb-8 tracking-tight">קלפי חוסן</h1>
+
+                        {/* אזור תצוגת הקלף */}
+                        {/* כפתורי פעולה */}
+                        <div className="flex flex-col gap-4 px-2">
+                            <button
+                                onClick={drawCard}
+                                disabled={deck.length === 0}
+                                className={`py-4 px-6 rounded-2xl text-xl font-bold transition-all duration-200 ${
+                                    deck.length === 0 
+                                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                                        : 'bg-pink-300 hover:bg-pink-400 text-white shadow-[0_4px_14px_0_rgba(244,114,182,0.39)] hover:shadow-[0_6px_20px_rgba(244,114,182,0.23)] hover:-translate-y-1 active:translate-y-0 active:scale-95'
+                                }`}
+                            >
+                                {deck.length === 0 ? 'החפיסה ריקה' : 'הגרל קלף'}
+                            </button>
+
+                            <button
+                                onClick={() => setShowResetModal(true)}
+                                className="py-3 px-6 rounded-2xl text-lg font-bold bg-blue-200 hover:bg-blue-300 text-blue-800 transition-all active:scale-95"
+                            >
+                                התחל מחדש
+                            </button>
+                        </div>
+
+                        {/* מונה קלפים */}
+                        <div className="mt-8 pt-6 flex justify-between items-center px-4 bg-white/50 rounded-2xl py-3 border border-purple-100">
+                            <span className="text-purple-800/70 font-medium">קלפים בקופה:</span>
+                            <div className="text-lg">
+                                <span className={`font-bold ${deck.length === 0 ? 'text-pink-400' : 'text-purple-800'}`}>
+                                    {deck.length}
+                                </span> 
+                                <span className="text-purple-400 mx-1">/</span> 
+                                <span className="text-purple-600/60">{TOTAL_CARDS}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* חלון אישור (Modal) לאיפוס המשחק */}
+                    {showResetModal && (
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-purple-900/30 backdrop-blur-[2px] p-4"
+                            onClick={() => setShowResetModal(false)}
+                        >
+                            <div 
+                                className="bg-white/95 backdrop-blur-md rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center border border-purple-100 animate-soft-pop"
+                                onClick={(e) => e.stopPropagation()} /* מונע סגירה כשלוחצים בתוך החלון הלבן */
+                            >
+                                <h3 className="text-2xl font-bold text-purple-800 mb-4">התחלה מחדש</h3>
+                                <p className="text-purple-700/80 mb-8 text-lg font-medium">האם אתה בטוח שברצונך להתחיל מחדש?</p>
+                                <div className="flex justify-center gap-4">
+                                    <button
+                                        onClick={() => setShowResetModal(false)}
+                                        className="py-3 px-6 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all w-1/2"
+                                    >
+                                        ביטול
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            resetDeck();
+                                            setShowResetModal(false);
+                                        }}
+                                        className="py-3 px-6 rounded-xl font-bold bg-blue-200 hover:bg-blue-300 text-blue-800 transition-all w-1/2"
+                                    >
+                                        כן, התחל
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
